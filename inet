@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Furniture AR Catalog</title>
+    
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+
+    <style>
+        /* --- 1. RESET & DASAR --- */
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f0f0;
+            overflow: hidden; /* Hilangkan scroll halaman utama */
+        }
+
+        /* --- 2. LAYAR 3D --- */
+        model-viewer {
+            width: 100vw;
+            height: 100vh;
+            background-color: #ffffff; /* Warna latar belakang viewer */
+            --poster-color: #ffffff;
+        }
+
+        /* --- 3. HEADER ATAS --- */
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 20px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+            color: white;
+            z-index: 10;
+            pointer-events: none; /* Biar tembus pandang kalau disentuh */
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .header p {
+            margin: 2px 0 0;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* --- 4. MENU BAWAH (SCROLLABLE) --- */
+        .menu-container {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            z-index: 10;
+            display: flex;
+            overflow-x: auto; /* Scroll samping */
+            padding: 10px 20px;
+            gap: 15px;
+            /* Sembunyikan scrollbar tapi tetap bisa scroll */
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+        }
+        .menu-container::-webkit-scrollbar { 
+            display: none; 
+        }
+
+        /* --- 5. GAYA TOMBOL (KARTU) --- */
+        .card {
+            background: white;
+            min-width: 100px;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .card:active {
+            transform: scale(0.95);
+        }
+
+        /* Jika tombol aktif/dipilih */
+        .card.active {
+            border-color: #007bff; /* Warna Biru */
+            background-color: #f0f8ff;
+        }
+
+        .card-icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            display: block;
+        }
+
+        /* --- 6. LOADING BAR --- */
+        .progress-bar {
+            display: block;
+            width: 33%;
+            height: 10%;
+            max-height: 4px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate3d(-50%, -50%, 0);
+            border-radius: 2px;
+            background-color: rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .update-bar {
+            background-color: #007bff;
+            width: 0%;
+            height: 100%;
+            float: left;
+            transition: width 0.3s;
+        }
+        
+        /* Tombol AR Bawaan Google biar gak ketutup menu */
+        .slot-ar-button {
+            position: absolute;
+            bottom: 120px; /* Di atas menu */
+            right: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <model-viewer 
+        id="viewer"
+        src="https://modelviewer.dev/shared-assets/models/Astronaut.glb" 
+        ar 
+        ar-modes="scene-viewer webxr quick-look" 
+        camera-controls 
+        auto-rotate 
+        shadow-intensity="1"
+        shadow-softness="1"
+        exposure="1"
+        environment-image="neutral">
+
+        <div class="progress-bar" slot="progress-bar">
+            <div class="update-bar" id="bar"></div>
+        </div>
+
+    </model-viewer>
+
+    <div class="header">
+        <h1>Furniture Catalog</h1>
+        <p>Pilih barang & taruh di ruanganmu</p>
+    </div>
+
+    <div class="menu-container">
+        
+        <div class="card active" onclick="gantiModel(this, 'https://modelviewer.dev/shared-assets/models/Astronaut.glb')">
+            <span class="card-icon">👩‍🚀</span>
+            <span class="card-title">Astronot</span>
+        </div>
+
+        <div class="card" onclick="gantiModel(this, 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SheenChair/glTF-Binary/SheenChair.glb')">
+            <span class="card-icon">🪑</span>
+            <span class="card-title">Kursi Tamu</span>
+        </div>
+
+        <div class="card" onclick="gantiModel(this, 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/AntiqueCamera/glTF-Binary/AntiqueCamera.glb')">
+            <span class="card-icon">📷</span>
+            <span class="card-title">Kamera</span>
+        </div>
+
+        <div class="card" onclick="gantiModel(this, 'https://raw.githubusercontent.com/Usertester2235/tes/refs/heads/main/meja.gltf')">
+            <span class="card-icon">📦</span>
+            <span class="card-title">Barang Baru</span>
+        </div>
+
+        </div>
+
+    <script>
+        const viewer = document.querySelector('#viewer');
+        const bar = document.querySelector('#bar');
+        
+        // 1. Fungsi Ganti Model & Warna Tombol
+        function gantiModel(element, url) {
+            // Ganti 3D Model
+            viewer.src = url;
+
+            // Reset semua tombol jadi putih
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            
+            // Ubah tombol yang diklik jadi biru
+            element.classList.add('active');
+        }
+
+        // 2. Fungsi Loading Bar
+        viewer.addEventListener('progress', (e) => {
+            const progress = e.detail.totalProgress;
+            bar.style.width = `${progress * 100}%`;
+            
+            // Sembunyikan bar kalau sudah 100%
+            if (progress === 1) {
+                bar.parentElement.style.display = 'none';
+            } else {
+                bar.parentElement.style.display = 'block';
+            }
+        });
+    </script>
+
+</body>
+</html>
